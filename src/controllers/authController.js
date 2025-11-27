@@ -1,20 +1,28 @@
 import pool from "../models/db.js";
 import bcrypt from "bcrypt";
 import { generateToken } from "../utils/token.js";
+import { loginSchema } from "../utils/validation.js";
 
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        status: "fail",
+        message: parsed.error.flatten().fieldErrors,
+      });
+    }
+    const { email: emailUser, password } = req.body;
     const query = {
       text: "SELECT * FROM users WHERE email = $1",
-      values: [email],
+      values: [emailUser],
     };
 
     const isUserExist = await pool.query(query);
 
     if (isUserExist.rowCount === 0) {
       return res.status(401).json({
-        status: "success",
+        status: "fail",
         message: "email atau password salah",
       });
     }
@@ -29,17 +37,37 @@ export const login = async (req, res) => {
       });
     }
 
+    const {
+      id,
+      email,
+      role,
+      full_name,
+      nim,
+      phone,
+      username,
+      url_photo
+    } = user;
+
     const token = generateToken({
-      id: user.id,
-      email: user.email,
-      role: user.role,
+      id,
+      email,
+      role,
     });
 
     return res.status(200).json({
       status: "success",
       message: "Login berhasil dilakukan",
       accessToken: token,
-      user,
+      user: {
+        id,
+        email,
+        role,
+        full_name,
+        nim,
+        phone,
+        username,
+        url_photo
+      },
     });
   } catch (err) {
     console.error(err);
