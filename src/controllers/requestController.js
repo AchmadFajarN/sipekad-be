@@ -12,17 +12,34 @@ export const getAllPengajuan = async (req, res) => {
       });
     }
 
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const countQuery = `SELECT COUNT(*) FROM requests`;
+    const countResult = await pool.query(countQuery);
+    const totalData = parseInt(countResult.rows[0].count);
+    const totalPage = Math.ceil(totalData/limit);
+
     const query = {
       text: `SELECT r.*
              FROM requests as r
-             ORDER BY r.updated_at DESC`,
+             ORDER BY r.updated_at DESC
+             LIMIT $1 OFFSET $2
+             `,
+      values: [limit, offset]
     };
 
     const result = await pool.query(query);
     return res.status(200).json({
       status: "success",
+      page,
+      limit,
+      totalData,
+      totalPage,
       data: result.rows,
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -44,13 +61,29 @@ export const getPengajuanByUserId = async (req, res) => {
       });
     }
 
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const countQuery = `SELECT COUNT(*) FROM requests`;
+    const countResult = await pool.query(countQuery);
+    const totalData = parseInt(countResult.rows[0].count);
+    const totalPage = Math.ceil(totalData/limit);
+
     const query = {
-      text: "SELECT * FROM requests WHERE user_id = $1 ORDER BY created_at DESC",
-      values: [id],
+      text: `SELECT * 
+             FROM requests WHERE user_id = $1 
+             ORDER BY created_at DESC
+             LIMIT $2 OFFSET $3`,
+      values: [id, limit, offset],
     };
     const result = await pool.query(query);
     return res.status(200).json({
       status: "success",
+      page,
+      limit,
+      totalData,
+      totalPage,
       data: result.rows,
     });
   } catch (err) {
@@ -106,13 +139,13 @@ export const getPengajuanDetail = async (req, res) => {
       values: [requestId],
     };
 
+    
     const result = await pool.query(query);
     return res.status(200).json({
       status: "success",
       data: result.rows[0],
     });
   } catch (err) {
-    console.error(err);
     return res.status(500).json({
       status: "fail",
       message: "Internal server error",

@@ -23,8 +23,8 @@ export const updateUserSchema = z.object({
 
 // request
 export const postRequestSchema = z.object({
-  type: z.string().min(10, "type minimal 10 digit").max(30, "type maksimal 30"),
-  message: z.string().max(50, "pesan maksimal 50 digit"),
+  type: z.string(),
+  message: z.string(),
 });
 
 // response

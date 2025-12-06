@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 
 export const uploadPdfHandler = (pathname) => {
-  const uploadPath = `upload/${pathname}`;
+  const uploadPath = `uploads/${pathname}`;
 
   if (!fs.existsSync(uploadPath)) {
     fs.mkdirSync(uploadPath, { recursive: true });

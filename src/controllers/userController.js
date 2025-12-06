@@ -11,9 +11,31 @@ export const getAllUser = async (req, res) => {
       });
     }
 
-    const result = await pool.query("SELECT id, username, nim, role, full_name, email, phone, url_photo FROM users");
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const offset = (page - 1) * limit;
+
+    const countQuery = 'SELECT COUNT (*) FROM users';
+    const countResult = await pool.query(countQuery);
+    const totalData = parseInt(countResult.rows[0].count);
+    const totalPage = Math.ceil(totalData/limit);
+
+    const query = {
+      text: `SELECT id, username, nim, role, full_name, email, phone, url_photo 
+             FROM users
+             ORDER BY username
+             LIMIT $1 OFFSET $2`,
+      values: [limit, offset]
+    }
+
+
+    const result = await pool.query(query);
     res.json({
       status: "success",
+      page,
+      limit,
+      totalData,
+      totalPage,
       data: result.rows,
     });
   } catch (err) {

@@ -18,9 +18,13 @@ export const getResponseByIdRequest = async (req, res) => {
         message: "anda tidak berhak mengakses resource ini",
       });
     }
-
     const query = {
-      text: "SELECT * FROM responses WHERE request_id = $1",
+      text: `SELECT r.*, req.status 
+             FROM responses AS r 
+             LEFT JOIN requests AS req
+             ON req.id = r.request_id 
+             WHERE request_id = $1`,
+             
       values: [requestId],
     };
 
@@ -28,7 +32,7 @@ export const getResponseByIdRequest = async (req, res) => {
     if (!result.rowCount) {
       return res.status(404).json({
         status: "fail",
-        message: "response tidak ditemukan",
+        message: "response tidak ditemukan atau admin belum meresponse",
       });
     }
 

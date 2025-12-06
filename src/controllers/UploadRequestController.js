@@ -1,61 +1,39 @@
-import { uploadPdfHandler } from "../utils/uploadHandler.js";
 import pool from "../models/db.js";
-import { findUserIdFromRequest } from "./requestController.js";
 import { nanoid } from "nanoid";
-
-const upload = uploadPdfHandler("request");
+import { uploadToS3 } from "../utils/uploadS3.js";
+import { findUserIdFromRequest } from "./requestController.js";
 
 export const uploadRequestController = async (req, res) => {
   try {
-    const uploadSingle = () =>
-      new Promise((resolve, reject) => {
-        upload.single("file")(req, res, (err) => {
-          if (err) reject(err);
-          else resolve(req.file);
-        });
-      });
+    const { role, id: userAuthenticate } = req.user;
+    const { id: reqId } = req.params;
+    const file = req.file;
+    const url = await uploadToS3(file.path, file.originalname, file.mimetype);
 
-    const file = await uploadSingle();
+    const userOwner = await findUserIdFromRequest(reqId);
 
-    if (!file) {
-      return res.status(400).json({
-        status: "fail",
-        message: "tidak ada file yang diupload",
-      });
-    }
-
-    const filePath = `http://localhost:${process.env.PORT}/upload/request/${file.filename}`;
-
-    const { role, id: authenticateUser } = req.user;
-    const { id } = req.params;
-    const ownerId = await findUserIdFromRequest(id);
-
-    if (role !== "admin" && authenticateUser !== ownerId) {
+    if (role !== "admin" && userAuthenticate !== userOwner) {
       return res.status(401).json({
         status: "fail",
-        message: "Anda tidak berhak mengakses resource ini",
+        message: "anda tidak berhak mengakses resource ini",
       });
     }
-
-    const idUrl = `url_req_${nanoid(10)}`;
-
+    const idUrl = `urlReq-${nanoid(16)}`;
     const query = {
-      text: "INSERT INTO url_req (id, url, req_id) VALUES ($1, $2, $3) RETURNING id",
-      values: [idUrl, filePath, id],
+      text: "INSERT INTO url_req (id, url, req_id) VALUES ($1, $2, $3) RETURNING url",
+      values: [idUrl, url, reqId],
     };
 
-    await pool.query(query);
-
-    return res.status(200).json({
+    const result = await pool.query(query);
+    return res.status(201).json({
       status: "success",
-      message: "upload berhasil",
-      url: filePath,
+      message: "file berhasil diupload",
+      url: result.rows[0].url,
     });
   } catch (err) {
-    console.error(err);
     return res.status(500).json({
-      status: "error",
-      message: "Terjadi kesalahan server",
+      status: "fail",
+      message: "Internal Server Error",
     });
   }
 };
