@@ -23,7 +23,7 @@ export const updateUserSchema = z.object({
 
 // request
 export const postRequestSchema = z.object({
-  type: z.string(),
+  type: z.string().max(200, "message maksimal harus 50 digit "),
   message: z.string(),
 });
 

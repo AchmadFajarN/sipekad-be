@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "start": "node ./bin/www",
-    "dev": "nodemon ./server.js",
+    "dev": "NODE_OPTIONS=--dns-result-order=ipv4first nodemon ./server.js",
     "migrate": "npx node-pg-migrate -c ./config/dbconfig.js -m ./database/migrations"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.943.0",
+    "@aws-sdk/lib-storage": "^3.952.0",
+    "@aws-sdk/s3-request-presigner": "^3.954.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

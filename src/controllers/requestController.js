@@ -6,29 +6,54 @@ export const getAllPengajuan = async (req, res) => {
   try {
     const { role } = req.user;
     if (role !== "admin") {
-      return res.status(401).json({
+      return res.status(403).json({
         status: "fail",
         message: "anda tidak berhak mengakses resource ini",
       });
     }
+    let filterStatus = req.query.filterStatus;
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
-    const countQuery = `SELECT COUNT(*) FROM requests`;
+    let countQuery = {
+      text: `SELECT COUNT(*) FROM requests WHERE status = $1`,
+      values: [filterStatus],
+    };
+
+    let query = {
+      text: `SELECT r.*, u.full_name
+               FROM requests as r
+               LEFT JOIN users AS u 
+               ON u.id = r.user_id
+               WHERE r.status = $1
+               ORDER BY r.updated_at DESC
+               LIMIT $2 OFFSET $3
+               `,
+      values: [filterStatus, limit, offset],
+    };
+
+    if (!filterStatus) {
+      countQuery = {
+        text: `SELECT COUNT(*) FROM requests`,
+        values: [],
+      };
+      query = {
+        text: `SELECT r.*, u.full_name
+               FROM requests as r
+               LEFT JOIN users AS u 
+               ON u.id = r.user_id
+               ORDER BY r.updated_at DESC
+               LIMIT $1 OFFSET $2
+               `,
+        values: [limit, offset],
+      };
+    }
+
     const countResult = await pool.query(countQuery);
     const totalData = parseInt(countResult.rows[0].count);
-    const totalPage = Math.ceil(totalData/limit);
-
-    const query = {
-      text: `SELECT r.*
-             FROM requests as r
-             ORDER BY r.updated_at DESC
-             LIMIT $1 OFFSET $2
-             `,
-      values: [limit, offset]
-    };
+    const totalPage = Math.ceil(totalData / limit);
 
     const result = await pool.query(query);
     return res.status(200).json({
@@ -37,9 +62,9 @@ export const getAllPengajuan = async (req, res) => {
       limit,
       totalData,
       totalPage,
+      filterStatus,
       data: result.rows,
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -55,7 +80,7 @@ export const getPengajuanByUserId = async (req, res) => {
     const { id } = req.params;
 
     if (role !== "admin" && authenticatedUser !== id) {
-      return res.status(400).json({
+      return res.status(403).json({
         status: "fail",
         message: "anda tidak berhak mengakses resource ini",
       });
@@ -65,25 +90,48 @@ export const getPengajuanByUserId = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
-    const countQuery = `SELECT COUNT(*) FROM requests`;
-    const countResult = await pool.query(countQuery);
-    const totalData = parseInt(countResult.rows[0].count);
-    const totalPage = Math.ceil(totalData/limit);
+    const filterStatus = req.query.filterStatus;
 
-    const query = {
+    let countQuery = {
+      text: `SELECT COUNT(*) FROM requests WHERE status = $1 AND user_id = $2`,
+      values: [filterStatus, id],
+    };
+
+    let query = {
       text: `SELECT * 
-             FROM requests WHERE user_id = $1 
+             FROM requests 
+             WHERE user_id = $1 AND status = $2
+             ORDER BY created_at DESC
+             LIMIT $3 OFFSET $4`,
+      values: [id, filterStatus, limit, offset],
+    };
+
+    if (!filterStatus) {
+      countQuery = {
+        text: `SELECT COUNT(*) FROM requests WHERE user_id = $1`,
+        values: [id],
+      };
+      query = {
+        text: `SELECT * 
+             FROM requests 
+             WHERE user_id = $1
              ORDER BY created_at DESC
              LIMIT $2 OFFSET $3`,
-      values: [id, limit, offset],
-    };
+        values: [id, limit, offset],
+      };
+    }
     const result = await pool.query(query);
+    const countResult = await pool.query(countQuery);
+    const totalData = parseInt(countResult.rows[0].count);
+    const totalPage = Math.ceil(totalData / limit);
+
     return res.status(200).json({
       status: "success",
       page,
       limit,
       totalData,
       totalPage,
+      filterStatus,
       data: result.rows,
     });
   } catch (err) {
@@ -128,8 +176,7 @@ export const getPengajuanDetail = async (req, res) => {
     const query = {
       text: `SELECT 
       r.*, 
-      users.username, 
-      users.url_photo,
+      users.full_name,
       users.nim,
       url_req.url
       FROM requests AS r
@@ -139,7 +186,6 @@ export const getPengajuanDetail = async (req, res) => {
       values: [requestId],
     };
 
-    
     const result = await pool.query(query);
     return res.status(200).json({
       status: "success",

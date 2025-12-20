@@ -1,27 +1,26 @@
 import pool from "../models/db.js";
 import { nanoid } from "nanoid";
 import { uploadToS3 } from "../utils/uploadS3.js";
-import { findUserIdFromRequest } from "./requestController.js";
 
-export const uploadRequestController = async (req, res) => {
+export const uploadResponseController = async (req, res) => {
   try {
-    const { role, id: userAuthenticate } = req.user;
-    const { id: reqId } = req.params;
+    const { role } = req.user;
+    const { id: resId } = req.params;
     const file = req.file;
-    const userOwner = await findUserIdFromRequest(reqId);
 
-    if (role !== "admin" && userAuthenticate !== userOwner) {
+    if (role !== "admin") {
       return res.status(401).json({
         status: "fail",
         message: "anda tidak berhak mengakses resource ini",
       });
     }
-
+    
     const url = await uploadToS3(file.path, file.originalname, file.mimetype);
+
     const idUrl = `urlReq-${nanoid(16)}`;
     const query = {
-      text: "INSERT INTO url_req (id, url, req_id) VALUES ($1, $2, $3) RETURNING url",
-      values: [idUrl, url, reqId],
+      text: "INSERT INTO url_res (id, url, res_id) VALUES ($1, $2, $3) RETURNING url",
+      values: [idUrl, url, resId],
     };
 
     const result = await pool.query(query);

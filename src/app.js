@@ -7,6 +7,10 @@ import responseRouter from "./routes/responseRouter.js";
 import dashboardRouter from "./routes/dashboardRouter.js";
 import uploadRequestRouter from "./routes/uploadRequestRoute.js";
 import path from "path";
+import uploadResponseRoutes from "./routes/uploadResponse.js";
+import dns from "dns";
+dns.setDefaultResultOrder("ipv4first");
+
 
 const app = express();
 app.use(express.json());
@@ -23,7 +27,8 @@ app.use("/users", userRouter);
 app.use("/request", pengajuanRouter);
 app.use("/response", responseRouter);
 app.use("/dashboard", dashboardRouter);
-app.use("/upload", express.static(path.join(process.cwd(), "upload")))
-app.use("/upload-request", uploadRequestRouter)
+app.use("/upload", express.static(path.join(process.cwd(), "upload")));
+app.use("/upload-request", uploadRequestRouter);
+app.use("/upload-response", uploadResponseRoutes);
 
 export default app;

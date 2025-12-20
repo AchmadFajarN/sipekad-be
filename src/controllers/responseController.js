@@ -19,12 +19,13 @@ export const getResponseByIdRequest = async (req, res) => {
       });
     }
     const query = {
-      text: `SELECT r.*, req.status 
-             FROM responses AS r 
-             LEFT JOIN requests AS req
-             ON req.id = r.request_id 
-             WHERE request_id = $1`,
-             
+      text: `SELECT r.*, req.status, ur.url 
+             FROM responses r
+             LEFT JOIN requests req ON req.id = r.request_id
+             LEFT JOIN url_res ur ON ur.res_id = r.id
+             WHERE r.request_id = $1
+`,
+
       values: [requestId],
     };
 
@@ -105,6 +106,7 @@ export const tambahResponse = async (req, res) => {
     return res.status(201).json({
       status: "success",
       message: "response berhasil ditambahkan",
+      responseId: result.rows[0].id,
     });
   } catch (err) {
     console.error(err);
