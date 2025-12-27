@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  addUser,
   getAllUser,
   getUserById,
   updateUser,
@@ -8,6 +9,7 @@ import {
 import { authenticate } from "../middlewares/auth.js";
 
 const userRouter = express.Router();
+userRouter.post("/", authenticate, addUser);
 userRouter.get("/", authenticate, getAllUser);
 userRouter.get("/:id", authenticate, getUserById);
 userRouter.put("/:id", authenticate, updateUser);

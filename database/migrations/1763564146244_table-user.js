@@ -9,7 +9,14 @@ export const shorthands = undefined;
  * @returns {Promise<void> | void}
  */
 export const up = (pgm) => {
-  pgm.createType("user_role", ["user", "admin"]);
+  pgm.sql(`
+    DO $$ 
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+        CREATE TYPE user_role AS ENUM ('user', 'admin');
+      END IF;
+    END$$;
+  `);
   pgm.createTable("users", {
     id: {
       type: "VARCHAR(50)",
@@ -56,6 +63,6 @@ export const up = (pgm) => {
  * @returns {Promise<void> | void}
  */
 export const down = (pgm) => {
-    pgm.dropTable("users");
-    pgm.dropType("user_role");
+  pgm.dropTable("users");
+  pgm.dropType("user_role");
 };

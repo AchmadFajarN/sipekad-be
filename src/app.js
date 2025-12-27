@@ -8,8 +8,6 @@ import dashboardRouter from "./routes/dashboardRouter.js";
 import uploadRequestRouter from "./routes/uploadRequestRoute.js";
 import path from "path";
 import uploadResponseRoutes from "./routes/uploadResponse.js";
-import dns from "dns";
-dns.setDefaultResultOrder("ipv4first");
 
 
 const app = express();

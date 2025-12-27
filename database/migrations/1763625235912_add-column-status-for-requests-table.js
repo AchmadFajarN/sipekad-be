@@ -9,7 +9,14 @@ export const shorthands = undefined;
  * @returns {Promise<void> | void}
  */
 export const up = (pgm) => {
-  pgm.createType("status", ["completed", "pending", "canceled"]);
+  pgm.sql(`
+    DO $$ 
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'status') THEN
+        CREATE TYPE user_role AS ENUM ('completed', 'pending', 'canceled');
+      END IF;
+    END$$;
+  `);
   pgm.addColumn("requests", {
     status: {
       type: "status",
